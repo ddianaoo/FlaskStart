@@ -2,12 +2,13 @@ from flask import Flask, render_template, url_for
 
 app = Flask(__name__)
 
-menu = ['Home', 'First application', 'Contacts']
+menu = [{"name": 'Set up', "url": "install-flask"},
+        {"name": 'First application', "url": "first-app"},
+        {"name": 'Contacts', "url": "contact"}]
 
 
 @app.route("/")
 def index():
-    print(url_for('index'))
     return render_template('index.html', menu=menu)
 
 
