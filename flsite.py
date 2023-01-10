@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request
 
 app = Flask(__name__)
 
@@ -20,6 +20,14 @@ def about():
 @app.route("/profile/<username>")
 def profile(username):
     return f"User - {username}"
+
+
+@app.route("/contact", methods=["POST", "GET"])
+def contact():
+    if request.method == "POST":
+        print(request.form)
+        return f'<h1>Thank you for you message, {request.form["username"]}</h1>'
+    return render_template('contact.html', title=menu[2]['name'], menu=menu)
 
 
 # @app.route("/profile/<username>/<int:number>")
