@@ -21,17 +21,19 @@
 </ul>
 {% endblock %}
 
-{% block content %}
-<div class="clear"></div>
 <div class="content">
+{% block content %}
+
+<div class="clear"></div>
+
     {% if title %}
         <h1>{{ title }}</h1>
     {% else %}
         <h1>My Site</h1>
     {% endif %}
 
-</div>
 {% endblock %}
+</div>
 
 </body>
 </html>

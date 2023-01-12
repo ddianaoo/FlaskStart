@@ -1,10 +1,12 @@
-from flask import Flask, render_template, url_for, request
+from flask import Flask, render_template, url_for, request, flash
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'juicy-pussy-money-money-pussy-juicy'
 
-menu = [{"name": 'Set up', "url": "install-flask"},
-        {"name": 'First application', "url": "first-app"},
-        {"name": 'Contacts', "url": "contact"}]
+menu = [{"name": 'Home', "url": "/"},
+        {"name": 'Articles', "url": "articles"},
+        {"name": 'Contacts', "url": "contact"},
+        {"name": 'Details', "url": "about"}]
 
 
 @app.route("/")
@@ -25,8 +27,11 @@ def profile(username):
 @app.route("/contact", methods=["POST", "GET"])
 def contact():
     if request.method == "POST":
-        print(request.form)
-        return f'<h1>Thank you for you message, {request.form["username"]}</h1>'
+        if len(request.form["username"]) > 2:
+            flash(f'{request.form["username"]}, Your message was sent!!', category='success')
+        else:
+            flash('Error, please try again. Your username must consist more than 2 letters!', category='error')
+
     return render_template('contact.html', title=menu[2]['name'], menu=menu)
 
 
