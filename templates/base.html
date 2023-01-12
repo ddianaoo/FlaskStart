@@ -16,7 +16,11 @@
 {% block mainmenu %}
 <ul class="mainmenu">
     {% for item in menu %}
+    {% if (item.name == 'Log in' and 'userLogged' in session) or  (item.name == 'Log out' and 'userLogged' not in session) %}
+    {{ pass }}
+    {% else %}
     <li><a href="{{ item.url }}">{{ item.name }}</a></li>
+    {% endif %}
     {% endfor %}
 </ul>
 {% endblock %}
