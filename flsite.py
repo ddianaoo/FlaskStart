@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, request, flash, session, redi
 import os
 import sqlite3
 import click
+from FDataBase import FDataBase
 
 # configuration
 DATABASE = '/tmp/flsite.db'
@@ -51,54 +52,87 @@ menu = [{"name": 'Home', "url": "/"},
 @app.route("/")
 def index():
     db = get_db()
-    return render_template('index.html', menu=menu)
+    dbase = FDataBase(db)
+    return render_template('index.html', menu=dbase.getMenu(), posts=dbase.getPosts())
 
-#
-# @app.route("/about")
-# def about():
-#     return render_template('about.html', title='About This Site', menu=menu)
-#
-#
-# @app.route("/profile/<username>")
-# def profile(username):
-#     if 'userLogged' not in session or session['userLogged'] != username:
-#         abort(403)
-#     #return f"User - {username}"
-#     return render_template('base.html', title=f"User - {username}", menu=menu)
-#
-#
-# @app.route("/contact", methods=["POST", "GET"])
-# def contact():
-#     if request.method == "POST":
-#         if len(request.form["username"]) > 2:
-#             flash(f'{request.form["username"]}, Your message was sent!!', category='success')
-#         else:
-#             flash('Error, please try again. Your username must consist more than 2 letters!', category='error')
-#
-#     return render_template('contact.html', title=menu[2]['name'], menu=menu)
-#
-#
-# @app.route('/login', methods=["POST", "GET"])
-# def login():
-#
-#     if 'userLogged' in session:
-#         return redirect(url_for('profile', username=session['userLogged']))
-#
-#     if request.method == "POST":
-#         if request.form["username"] == 'diana' and request.form['password'] == '123':
-#             session['userLogged'] = request.form["username"]
-#             #flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
-#             return redirect(url_for('profile', username=session['userLogged']))
-#         else:
-#             flash('Error, please try again!', category='error')
-#
-#     return render_template('login.html', title='Log in', menu=menu)
-#
-#
-# @app.route('/logout', methods=["POST", "GET"])
-# def logout():
-#     session.pop('userLogged', None)
-#     return redirect(url_for('index'))
+
+@app.route("/add-post", methods=["POST", "GET"])
+def addPost():
+    db = get_db()
+    dbase = FDataBase(db)
+
+    if request.method == 'POST':
+        res = dbase.addPost(request.form['title'], request.form['text'])
+        if not res:
+            flash('Error occurred during creation post', category='error')
+        else:
+            flash(f'Yout post was added successfuly !!', category='success')
+
+    return render_template('addpost.html', title='Add post', menu=dbase.getMenu())
+
+
+@app.route("/post/<int:id_post>")
+def showPost(id_post):
+    db = get_db()
+    dbase = FDataBase(db)
+    title, text = dbase.getPost(id_post)
+    if not title:
+        abort(404)
+    return render_template('single_post.html', menu=dbase.getMenu(), title=title, text=text)
+
+
+@app.route("/about")
+def about():
+    db = get_db()
+    dbase = FDataBase(db)
+    return render_template('about.html', title='Details', menu=dbase.getMenu())
+
+
+@app.route("/profile/<username>")
+def profile(username):
+    db = get_db()
+    dbase = FDataBase(db)
+    if 'userLogged' not in session or session['userLogged'] != username:
+        abort(403)
+    return render_template('base.html', title=f"User - {username}", menu=dbase.getMenu())
+
+
+@app.route("/contact", methods=["POST", "GET"])
+def contact():
+    db = get_db()
+    dbase = FDataBase(db)
+    if request.method == "POST":
+        if len(request.form["username"]) > 2:
+            flash(f'{request.form["username"]}, Your message was sent!!', category='success')
+        else:
+            flash('Error, please try again. Your username must consist more than 2 letters!', category='error')
+
+    return render_template('contact.html', title=menu[2]['name'], menu=dbase.getMenu())
+
+
+@app.route('/login', methods=["POST", "GET"])
+def login():
+    db = get_db()
+    dbase = FDataBase(db)
+
+    if 'userLogged' in session:
+        return redirect(url_for('profile', username=session['userLogged']))
+
+    if request.method == "POST":
+        if request.form["username"] == 'diana' and request.form['password'] == '123':
+            session['userLogged'] = request.form["username"]
+            #flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
+            return redirect(url_for('profile', username=session['userLogged']))
+        else:
+            flash('Error, please try again!', category='error')
+
+    return render_template('login.html', title='Log in', menu=dbase.getMenu())
+
+
+@app.route('/logout', methods=["POST", "GET"])
+def logout():
+    session.pop('userLogged', None)
+    return redirect(url_for('index'))
 
 
 # with app.test_request_context():
@@ -107,14 +141,13 @@ def index():
 #     print(url_for('profile', username='ebal-tvoyu-mamky'))
 
 
-# @app.errorhandler(404)
-# def PageDoesntExist(error):
-#     return render_template('page404.html', title='Page Not Found! Please Check Your Url !', menu=menu), 404
-#
-#
-# @app.errorhandler(403)
-# def forbidden(error):
-#     return render_template('page403.html', title='This page is Forbidden for you!', menu=menu), 403
+@app.errorhandler(404)
+def PageDoesntExist(error):
+    return render_template('page404.html', title='Page Not Found! Please Check Your Url !', menu=menu), 404
+
+@app.errorhandler(403)
+def forbidden(error):
+    return render_template('page403.html', title='This page is Forbidden for you!', menu=menu), 403
 
 
 if __name__ == "__main__":
