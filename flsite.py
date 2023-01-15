@@ -62,7 +62,7 @@ def addPost():
     dbase = FDataBase(db)
 
     if request.method == 'POST':
-        res = dbase.addPost(request.form['title'], request.form['text'])
+        res = dbase.addPost(request.form['title'], request.form['text'], request.form['url'])
         if not res:
             flash('Error occurred during creation post', category='error')
         else:
@@ -71,11 +71,11 @@ def addPost():
     return render_template('addpost.html', title='Add post', menu=dbase.getMenu())
 
 
-@app.route("/post/<int:id_post>")
-def showPost(id_post):
+@app.route("/post/<url>")
+def showPost(url):
     db = get_db()
     dbase = FDataBase(db)
-    title, text = dbase.getPost(id_post)
+    title, text = dbase.getPost(url)
     if not title:
         abort(404)
     return render_template('single_post.html', menu=dbase.getMenu(), title=title, text=text)
