@@ -1,4 +1,4 @@
-from flask import Flask, render_template, make_response
+from flask import Flask, render_template, make_response, redirect, url_for
 
 app = Flask(__name__)
 
@@ -10,30 +10,36 @@ menu = [
 
 @app.route("/")
 def index():
-    # return render_template('index.html', menu=menu, posts=[])
+    return "<h1>Home</h1>", 200, {'Content-Type': 'text/plain'}
 
-    # 1 case
-    # content = render_template('index.html', menu=menu, posts=[])
-    # res = make_response(content)
-    # res.headers['Content-Type'] = 'text/plain'
-    # res.headers['Server'] = 'flasksite'
 
-    # 2 case
-    # img = None
-    # with app.open_resource(app.root_path + "/static/img/dog/dog.jpg", mode="rb") as f:
-    #     img = f.read()
-    #
-    # if img is None:
-    #     return "None Image"
-    #
-    # res = make_response(img)
-    # res.headers['Content-Type'] = 'image/jpg'
+@app.route('/transfer')
+def transfer():
+    return redirect(url_for('index'), 301)
 
-    # 3 case
-    res = make_response("<h1>Error</h1>", 500)
 
-    return res
+@app.errorhandler(404)
+def PageDoesntExist(error):
+    return ('Page Not Found', 404)
 
+
+@app.before_first_request
+def before_first_request():
+    print("before_first_request() called")
+    
+@app.before_request    
+def before_request():
+    print("before_request() called")
+
+@app.after_request
+def after_request(response):
+    print("after_request() called")
+    return response
+
+@app.teardown_request
+def teardown_request(response):
+    print("teardown_request() called")
+    return response
 
 if __name__ == "__main__":
     app.run(debug=True)
