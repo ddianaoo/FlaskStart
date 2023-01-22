@@ -1,7 +1,7 @@
 from flask import Flask, render_template, url_for, request, flash, session, redirect, abort, current_app, g, make_response
 import os
 import sqlite3
-import click
+import datetime
 from FDataBase import FDataBase
 
 # configuration
@@ -11,8 +11,9 @@ SECRET_KEY = 'juicy-pussy-money-money-pussy-juicy'
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-
 app.config.update(dict(DATABASE=os.path.join(app.root_path, 'flsite.db')))
+
+app.permanent_session_lifetime = datetime.timedelta(days=10)
 
 
 def connect_db():
@@ -53,7 +54,25 @@ menu = [{"name": 'Home', "url": "/"},
 def index():
     db = get_db()
     dbase = FDataBase(db)
-    return render_template('index.html', menu=dbase.getMenu(), posts=dbase.getPosts())
+
+    if 'visits' in session:
+        session['visits'] = session.get('visits') + 1
+    else:
+        session['visits'] = 1
+
+    return render_template('index.html', menu=dbase.getMenu(), posts=dbase.getPosts(), visits=session['visits'])
+
+
+data = [1, 2, 3]
+@app.route("/session")
+def session_data():
+    session.permanent = True
+    if 'data' not in session:
+        session['data'] = data
+    else:
+        session['data'][1] += 1
+        session.modified = True
+    return f"<p>data: {session.get('data')}"
 
 
 @app.route("/add-post", methods=["POST", "GET"])
