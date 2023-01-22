@@ -4,6 +4,9 @@ import sqlite3
 import datetime
 from FDataBase import FDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import LoginManager, login_user, login_required
+from UserLogin import UserLogin
+
 
 # configuration
 DATABASE = '/tmp/flsite.db'
@@ -15,6 +18,14 @@ app.config.from_object(__name__)
 app.config.update(dict(DATABASE=os.path.join(app.root_path, 'flsite.db')))
 
 app.permanent_session_lifetime = datetime.timedelta(days=10)
+
+login_manager = LoginManager(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    print('load_user')
+    return UserLogin().fromDB(user_id, dbase)
 
 
 def connect_db():
@@ -94,6 +105,7 @@ def addPost():
 
 
 @app.route("/post/<url>")
+@login_required
 def showPost(url):
     title, text = dbase.getPost(url)
     if not title:
@@ -108,8 +120,8 @@ def about():
 
 @app.route("/profile/<username>")
 def profile(username):
-    if 'userLogged' not in session or session['userLogged'] != username:
-        abort(403)
+    # if 'userLogged' not in session or session['userLogged'] != username:
+    #     abort(403)
     return render_template('base.html', title=f"User - {username}", menu=dbase.getMenu())
 
 
@@ -136,27 +148,43 @@ def register():
                 return redirect(url_for('login'))
             else:
                 flash('Error, email already in use!', category='error')
-
+        flash('Error, The entered data is incorrect! Maybe your username, email or password too short. Or passwords aren`t the same!', category='error')
     return render_template('register.html', title='Registration', menu=dbase.getMenu())
+
+
+# @app.route('/login', methods=["POST", "GET"])
+# def login():
+#     if 'userLogged' in session:
+#         return redirect(url_for('profile', username=session['userLogged']))
+#
+#     if request.method == "POST":
+#         user = dbase.getUser(email=request.form['email'])
+#
+#         if not user:
+#             flash('Error, please try again!', category='error')
+#             return render_template('login.html', title='Log in', menu=dbase.getMenu())
+#
+#         if request.form["username"] == user['username'] and user['email'] == request.form['email'] and check_password_hash(user['password'], request.form['password']):
+#             session['userLogged'] = request.form["username"]
+#             flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
+#             return redirect(url_for('profile', username=session['userLogged']))
+#         else:
+#             flash('Error, please try again!', category='error')
+#
+#     return render_template('login.html', title='Log in', menu=dbase.getMenu())
 
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
-    if 'userLogged' in session:
-        return redirect(url_for('profile', username=session['userLogged']))
-
     if request.method == "POST":
-        username, email, password = dbase.getUser(request.form['email'])
-        if not username:
-            abort(404)
-
-        if request.form["username"] == username and check_password_hash(password, request.form['password']):
-            session['userLogged'] = request.form["username"]
-            flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
-            return redirect(url_for('profile', username=session['userLogged']))
-        else:
-            flash('Error, please try again!', category='error')
-
+        user = dbase.getUser(email=request.form['email'])
+        if user:
+            if request.form["username"] == user['username'] and check_password_hash(user['password'], request.form['password']):
+                userlogin = UserLogin().create(user)
+                login_user(userlogin)
+                flash(f'Successfuly Logged in as {request.form["username"]} !!', category='success')
+                return redirect(url_for('profile', username=request.form["username"]))
+        flash('The entered data is incorrect', category='error')
     return render_template('login.html', title='Log in', menu=dbase.getMenu())
 
 
@@ -190,11 +218,11 @@ def logout():
 
 @app.errorhandler(404)
 def PageDoesntExist(error):
-    return render_template('page404.html', title='Page Not Found! Please Check Your Url !', menu=menu), 404
+    return render_template('page404.html', title='Page Not Found! Please Check Your Url !', menu=dbase.getMenu()), 404
 
 @app.errorhandler(403)
 def forbidden(error):
-    return render_template('page403.html', title='This page is Forbidden for you!', menu=menu), 403
+    return render_template('page403.html', title='This page is Forbidden for you!', menu=dbase.getMenu()), 403
 
 
 if __name__ == "__main__":

@@ -82,13 +82,17 @@ class FDataBase:
             return False
         return True
 
-    def getUser(self, email):
-        sql = f"SELECT username, email, password FROM users WHERE email LIKE '{email}' LIMIT 1"
+
+    def getUser(self, user_id=None, email=None):
+        if email is not None:
+            sql = f"SELECT * FROM users WHERE email LIKE '{email}' LIMIT 1"
+        elif user_id is not None:
+            sql = f"SELECT * FROM users WHERE id LIKE '{user_id}' LIMIT 1"
         try:
             self.__cur.execute(sql)
             res = self.__cur.fetchone()
             if res:
                 return res
         except sqlite3.Error as e:
-            print("Error occurred during receiving single post from db"+str(e))
-        return (False, False, False)
+            print("Error occurred during receiving user from db"+str(e))
+        return False
