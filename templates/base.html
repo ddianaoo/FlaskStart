@@ -16,7 +16,7 @@
 {% block mainmenu %}
 <ul class="mainmenu">
     {% for item in menu %}
-    {% if (item.title == 'Log in' and 'userLogged' in session) or  (item.title == 'Log out' and 'userLogged' not in session) %}
+    {% if ((item.title == 'Log in' or item.title == 'Register') and 'userLogged' in session) or  (item.title == 'Log out' and 'userLogged' not in session) %}
     {{ pass }}
     {% else %}
     <li><a href="{{ url_for(item.url) }}">{{ item.title }}</a></li>
@@ -27,6 +27,10 @@
 
 <div class="content">
 {% block content %}
+
+{% for cat, msg in get_flashed_messages(True) %}
+<div class="flash {{ cat }}">{{ msg }}</div>
+{% endfor %}
 
 <div class="clear"></div>
 

@@ -3,6 +3,7 @@ import os
 import sqlite3
 import datetime
 from FDataBase import FDataBase
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # configuration
 DATABASE = '/tmp/flsite.db'
@@ -42,6 +43,14 @@ def close_db(error):
         g.link_db.close()
 
 
+dbase = None
+@app.before_request
+def before_request():
+    global dbase
+    db = get_db()
+    dbase = FDataBase(db)
+
+
 menu = [{"name": 'Home', "url": "/"},
         {"name": 'Articles', "url": "/articles"},
         {"name": 'Contacts', "url": "/contact"},
@@ -52,9 +61,6 @@ menu = [{"name": 'Home', "url": "/"},
 
 @app.route("/")
 def index():
-    db = get_db()
-    dbase = FDataBase(db)
-
     if 'visits' in session:
         session['visits'] = session.get('visits') + 1
     else:
@@ -63,23 +69,20 @@ def index():
     return render_template('index.html', menu=dbase.getMenu(), posts=dbase.getPosts(), visits=session['visits'])
 
 
-data = [1, 2, 3]
-@app.route("/session")
-def session_data():
-    session.permanent = True
-    if 'data' not in session:
-        session['data'] = data
-    else:
-        session['data'][1] += 1
-        session.modified = True
-    return f"<p>data: {session.get('data')}"
+# data = [1, 2, 3]
+# @app.route("/session")
+# def session_data():
+#     session.permanent = True
+#     if 'data' not in session:
+#         session['data'] = data
+#     else:
+#         session['data'][1] += 1
+#         session.modified = True
+#     return f"<p>data: {session.get('data')}"
 
 
 @app.route("/add-post", methods=["POST", "GET"])
 def addPost():
-    db = get_db()
-    dbase = FDataBase(db)
-
     if request.method == 'POST':
         res = dbase.addPost(request.form['title'], request.form['text'], request.form['url'])
         if not res:
@@ -92,8 +95,6 @@ def addPost():
 
 @app.route("/post/<url>")
 def showPost(url):
-    db = get_db()
-    dbase = FDataBase(db)
     title, text = dbase.getPost(url)
     if not title:
         abort(404)
@@ -102,15 +103,11 @@ def showPost(url):
 
 @app.route("/about")
 def about():
-    db = get_db()
-    dbase = FDataBase(db)
     return render_template('about.html', title='Details', menu=dbase.getMenu())
 
 
 @app.route("/profile/<username>")
 def profile(username):
-    db = get_db()
-    dbase = FDataBase(db)
     if 'userLogged' not in session or session['userLogged'] != username:
         abort(403)
     return render_template('base.html', title=f"User - {username}", menu=dbase.getMenu())
@@ -118,8 +115,6 @@ def profile(username):
 
 @app.route("/contact", methods=["POST", "GET"])
 def contact():
-    db = get_db()
-    dbase = FDataBase(db)
     if request.method == "POST":
         if len(request.form["username"]) > 2:
             flash(f'{request.form["username"]}, Your message was sent!!', category='success')
@@ -129,44 +124,62 @@ def contact():
     return render_template('contact.html', title=menu[2]['name'], menu=dbase.getMenu())
 
 
-# @app.route('/login', methods=["POST", "GET"])
-# def login():
-#     db = get_db()
-#     dbase = FDataBase(db)
-#
-#     if 'userLogged' in session:
-#         return redirect(url_for('profile', username=session['userLogged']))
-#
-#     if request.method == "POST":
-#         if request.form["username"] == 'diana' and request.form['password'] == '123':
-#             session['userLogged'] = request.form["username"]
-#             #flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
-#             return redirect(url_for('profile', username=session['userLogged']))
-#         else:
-#             flash('Error, please try again!', category='error')
-#
-#     return render_template('login.html', title='Log in', menu=dbase.getMenu())
+@app.route('/register', methods=["POST", "GET"])
+def register():
+    if request.method == "POST":
+        if len(request.form['username']) > 4 and len(request.form['email']) > 4 \
+            and len(request.form['password']) > 3 and request.form['password'] == request.form['password2']:
+            hash = generate_password_hash(request.form['password'])
+            res = dbase.addUser(request.form['username'], request.form['email'], hash)
+            if res:
+                flash(f'Successfuly registered as {request.form["username"]}!!', category='success')
+                return redirect(url_for('login'))
+            else:
+                flash('Error, email already in use!', category='error')
 
-# @app.route('/logout', methods=["POST", "GET"])
-# def logout():
-#     session.pop('userLogged', None)
-#     return redirect(url_for('index'))
+    return render_template('register.html', title='Registration', menu=dbase.getMenu())
 
 
-@app.route("/login")
+@app.route('/login', methods=["POST", "GET"])
 def login():
-    log = ""
-    if request.cookies.get('logged'):
-        log = request.cookies.get('logged')
-    res = make_response(f"<h1>Authorization Form</h1><p>logged: {log}")
-    res.set_cookie("logged", 'YES', 30*24*3600)
-    return res
+    if 'userLogged' in session:
+        return redirect(url_for('profile', username=session['userLogged']))
 
-@app.route('/logout')
+    if request.method == "POST":
+        username, email, password = dbase.getUser(request.form['email'])
+        if not username:
+            abort(404)
+
+        if request.form["username"] == username and check_password_hash(password, request.form['password']):
+            session['userLogged'] = request.form["username"]
+            flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
+            return redirect(url_for('profile', username=session['userLogged']))
+        else:
+            flash('Error, please try again!', category='error')
+
+    return render_template('login.html', title='Log in', menu=dbase.getMenu())
+
+
+@app.route('/logout', methods=["POST", "GET"])
 def logout():
-    res = make_response("<h1>You are not authorized</h1>")
-    res.set_cookie('logged', '', 0)
-    return res
+    session.pop('userLogged', None)
+    return redirect(url_for('index'))
+
+
+# @app.route("/login")
+# def login():
+#     log = ""
+#     if request.cookies.get('logged'):
+#         log = request.cookies.get('logged')
+#     res = make_response(f"<h1>Authorization Form</h1><p>logged: {log}")
+#     res.set_cookie("logged", 'YES', 30*24*3600)
+#     return res
+#
+# @app.route('/logout')
+# def logout():
+#     res = make_response("<h1>You are not authorized</h1>")
+#     res.set_cookie('logged', '', 0)
+#     return res
 
 
 # with app.test_request_context():

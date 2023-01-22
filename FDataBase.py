@@ -63,3 +63,32 @@ class FDataBase:
         except:
             print('Error occurred during receiving posts from db')
         return []
+
+    def addUser(self, username, email, password):
+        sql = '''INSERT INTO users VALUES(NULL, ?, ?, ?, ?)'''
+
+        try:
+            self.__cur.execute(f"SELECT COUNT() as 'count' FROM users WHERE email LIKE '{email}'")
+            res = self.__cur.fetchone()
+            if res['count'] > 0:
+                print("Email already in use")
+                return False
+
+            tm = math.floor(time.time())
+            self.__cur.execute(sql, (username, email, password, tm))
+            self.__db.commit()
+        except sqlite3.Error as e:
+            print("Error occurred during adding user into db"+str(e))
+            return False
+        return True
+
+    def getUser(self, email):
+        sql = f"SELECT username, email, password FROM users WHERE email LIKE '{email}' LIMIT 1"
+        try:
+            self.__cur.execute(sql)
+            res = self.__cur.fetchone()
+            if res:
+                return res
+        except sqlite3.Error as e:
+            print("Error occurred during receiving single post from db"+str(e))
+        return (False, False, False)
