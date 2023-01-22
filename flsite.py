@@ -4,7 +4,7 @@ import sqlite3
 import datetime
 from FDataBase import FDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, login_user, login_required
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from UserLogin import UserLogin
 
 
@@ -20,7 +20,9 @@ app.config.update(dict(DATABASE=os.path.join(app.root_path, 'flsite.db')))
 app.permanent_session_lifetime = datetime.timedelta(days=10)
 
 login_manager = LoginManager(app)
-
+login_manager.login_view = 'login'
+login_manager.login_message = 'Please log in if you want to visit this page'
+login_manager.login_message_category = 'error'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -80,18 +82,6 @@ def index():
     return render_template('index.html', menu=dbase.getMenu(), posts=dbase.getPosts(), visits=session['visits'])
 
 
-# data = [1, 2, 3]
-# @app.route("/session")
-# def session_data():
-#     session.permanent = True
-#     if 'data' not in session:
-#         session['data'] = data
-#     else:
-#         session['data'][1] += 1
-#         session.modified = True
-#     return f"<p>data: {session.get('data')}"
-
-
 @app.route("/add-post", methods=["POST", "GET"])
 def addPost():
     if request.method == 'POST':
@@ -119,9 +109,13 @@ def about():
 
 
 @app.route("/profile/<username>")
+@login_required
 def profile(username):
-    # if 'userLogged' not in session or session['userLogged'] != username:
-    #     abort(403)
+    requester_id = current_user.get_id()
+    requester = dbase.getUser(user_id=requester_id)
+
+    if username != requester['username']:
+        abort(403)
     return render_template('base.html', title=f"User - {username}", menu=dbase.getMenu())
 
 
@@ -172,42 +166,42 @@ def register():
 #             flash('Error, please try again!', category='error')
 #
 #     return render_template('login.html', title='Log in', menu=dbase.getMenu())
+#
+#
+# @app.route('/logout')
+# def logout():
+#     session.pop('userLogged', None)
+#     return redirect(url_for('index'))
 
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
+    if current_user.is_authenticated:
+        requester_id = current_user.get_id()
+        requester = dbase.getUser(user_id=requester_id)
+        return redirect(url_for('profile', username=requester['username']))
+
     if request.method == "POST":
         user = dbase.getUser(email=request.form['email'])
-        if user:
-            if request.form["username"] == user['username'] and check_password_hash(user['password'], request.form['password']):
-                userlogin = UserLogin().create(user)
-                login_user(userlogin)
-                flash(f'Successfuly Logged in as {request.form["username"]} !!', category='success')
-                return redirect(url_for('profile', username=request.form["username"]))
+
+        if user and request.form["username"] == user['username'] and check_password_hash(user['password'], request.form['password']):
+            userlogin = UserLogin().create(user)
+            rm = True if request.form.get('remainme') else False
+            login_user(userlogin, remember=rm)
+            flash(f'Successfuly Logged in as {request.form["username"]} !!', category='success')
+            #return redirect(url_for('profile', username=request.form["username"]))
+            return redirect(request.args.get("next") or url_for('profile', username=request.form["username"]))
+
         flash('The entered data is incorrect', category='error')
     return render_template('login.html', title='Log in', menu=dbase.getMenu())
 
 
-@app.route('/logout', methods=["POST", "GET"])
+@app.route('/logout')
+@login_required
 def logout():
-    session.pop('userLogged', None)
+    logout_user()
+    flash('You are out of your account', 'success')
     return redirect(url_for('index'))
-
-
-# @app.route("/login")
-# def login():
-#     log = ""
-#     if request.cookies.get('logged'):
-#         log = request.cookies.get('logged')
-#     res = make_response(f"<h1>Authorization Form</h1><p>logged: {log}")
-#     res.set_cookie("logged", 'YES', 30*24*3600)
-#     return res
-#
-# @app.route('/logout')
-# def logout():
-#     res = make_response("<h1>You are not authorized</h1>")
-#     res.set_cookie('logged', '', 0)
-#     return res
 
 
 # with app.test_request_context():
@@ -222,7 +216,11 @@ def PageDoesntExist(error):
 
 @app.errorhandler(403)
 def forbidden(error):
-    return render_template('page403.html', title='This page is Forbidden for you!', menu=dbase.getMenu()), 403
+    return render_template('base.html', title='This page is Forbidden for you!', menu=dbase.getMenu()), 403
+
+@app.errorhandler(401)
+def forbidden(error):
+    return render_template('base.html', title='You are Unauthorized!', menu=dbase.getMenu()), 401
 
 
 if __name__ == "__main__":
