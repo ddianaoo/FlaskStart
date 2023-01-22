@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, request, flash, session, redirect, abort, current_app, g
+from flask import Flask, render_template, url_for, request, flash, session, redirect, abort, current_app, g, make_response
 import os
 import sqlite3
 import click
@@ -110,29 +110,44 @@ def contact():
     return render_template('contact.html', title=menu[2]['name'], menu=dbase.getMenu())
 
 
-@app.route('/login', methods=["POST", "GET"])
+# @app.route('/login', methods=["POST", "GET"])
+# def login():
+#     db = get_db()
+#     dbase = FDataBase(db)
+#
+#     if 'userLogged' in session:
+#         return redirect(url_for('profile', username=session['userLogged']))
+#
+#     if request.method == "POST":
+#         if request.form["username"] == 'diana' and request.form['password'] == '123':
+#             session['userLogged'] = request.form["username"]
+#             #flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
+#             return redirect(url_for('profile', username=session['userLogged']))
+#         else:
+#             flash('Error, please try again!', category='error')
+#
+#     return render_template('login.html', title='Log in', menu=dbase.getMenu())
+
+# @app.route('/logout', methods=["POST", "GET"])
+# def logout():
+#     session.pop('userLogged', None)
+#     return redirect(url_for('index'))
+
+
+@app.route("/login")
 def login():
-    db = get_db()
-    dbase = FDataBase(db)
+    log = ""
+    if request.cookies.get('logged'):
+        log = request.cookies.get('logged')
+    res = make_response(f"<h1>Authorization Form</h1><p>logged: {log}")
+    res.set_cookie("logged", 'YES', 30*24*3600)
+    return res
 
-    if 'userLogged' in session:
-        return redirect(url_for('profile', username=session['userLogged']))
-
-    if request.method == "POST":
-        if request.form["username"] == 'diana' and request.form['password'] == '123':
-            session['userLogged'] = request.form["username"]
-            #flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
-            return redirect(url_for('profile', username=session['userLogged']))
-        else:
-            flash('Error, please try again!', category='error')
-
-    return render_template('login.html', title='Log in', menu=dbase.getMenu())
-
-
-@app.route('/logout', methods=["POST", "GET"])
+@app.route('/logout')
 def logout():
-    session.pop('userLogged', None)
-    return redirect(url_for('index'))
+    res = make_response("<h1>You are not authorized</h1>")
+    res.set_cookie('logged', '', 0)
+    return res
 
 
 # with app.test_request_context():
