@@ -5,11 +5,24 @@
 
 <form action="{{ url_for('register') }}" method="post" class="form-contact">
 
-    <p><label>Username: </label><input type="text" name="username" value="" required></p>
-    <p><label>Email: </label><input type="email" name="email" value="" required></p>
-    <p><label>Password: </label><input type="password" name="password" value="" required></p>
-    <p><label>Password2: </label><input type="password" name="password2" value="" required></p>
-    <p><input type="submit" value="Send"></p>
+    {{ form.hidden_tag() }}
+
+    {% for field in form if field.name not in ['csrf_token', 'submit'] %}
+    <p>{{ field.label() }}
+        {% if field.errors %}
+        {{ field(class="invalid") }}
+        <span class="invalid-feedback">
+            {% for e in field.errors %}
+            {{ e }}
+            {% endfor %}
+        </span>
+        {% else %}
+        {{ field() }}
+        {% endif %}</p>
+    {% endfor %}
+
+    <p>{{ form.submit() }}</p>
+
     <hr align=left width="300px">
     <p><a href="{{ url_for('login')}}">Log in</a></p>
 

@@ -60,6 +60,14 @@ div.content {
 .form-contact p { margin: 10px 0;}
 .form-contact input[type=submit], textarea {font-size: 16px;}
 
+.form-contact .invalid {
+    background: #FF9898;
+}
+
+.form-contact .invalid-feedback {
+    color: #CC0000;
+}
+
 .flash {
     padding:10px;
 }
@@ -137,3 +145,4 @@ ul.profile-info{
     color: #7E652F;
 }
 ul.profile-info li {margin-top:10px;}
+
