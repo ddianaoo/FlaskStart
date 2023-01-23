@@ -4,12 +4,13 @@
 {{ super() }}
 
 <form action="" method="post" class="form-contact">
+    {{ form.hidden_tag() }}
+    <p>{{ form.username.label() }}{{ form.username() }}</p>
+    <p>{{ form.email.label() }}{{ form.email() }}</p>
+    <p>{{ form.password.label() }}{{ form.password() }}</p>
+    <p>{{ form.remember.label() }}{{ form.remember() }}</p>
+    <p>{{ form.submit() }}</p>
 
-    <p><label>Name: </label><input type="text" name="username" value="" required></p>
-    <p><label>Email: </label><input type="email" name="email" value="" required></p>
-    <p><label>Password: </label><input type="password" name="password" value="" required></p>
-    <p><input type="checkbox" name="remainme">Remain me</p>
-    <p><input type="submit" value="Log in"></p>
     <hr align=left width="300px">
     <p><a href="{{ url_for('register')}}">Registration</a></p>
 

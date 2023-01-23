@@ -6,6 +6,7 @@ from FDataBase import FDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from UserLogin import UserLogin
+from forms import LoginForm
 
 
 # configuration
@@ -25,9 +26,9 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in if you want to visit this page'
 login_manager.login_message_category = 'error'
 
+
 @login_manager.user_loader
 def load_user(user_id):
-    print('load_user')
     return UserLogin().fromDB(user_id, dbase)
 
 
@@ -182,23 +183,39 @@ def register():
 @app.route('/login', methods=["POST", "GET"])
 def login():
     if current_user.is_authenticated:
-        requester_id = current_user.get_id()
-        requester = dbase.getUser(user_id=requester_id)
-        return redirect(url_for('profile', username=requester['username']))
+        return redirect(url_for('profile', username=current_user.getName()))
 
-    if request.method == "POST":
-        user = dbase.getUser(email=request.form['email'])
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = dbase.getUser(email=form.email.data)
 
-        if user and request.form["username"] == user['username'] and check_password_hash(user['password'], request.form['password']):
+        if user and form.username.data == user['username'] and check_password_hash(user['password'], form.password.data):
             userlogin = UserLogin().create(user)
-            rm = True if request.form.get('remainme') else False
+            rm = form.remember.data
             login_user(userlogin, remember=rm)
-            flash(f'Successfuly Logged in as {request.form["username"]} !!', category='success')
+            flash(f'Successfuly Logged in as {form.username.data} !!', category='success')
             #return redirect(url_for('profile', username=request.form["username"]))
-            return redirect(request.args.get("next") or url_for('profile', username=request.form["username"]))
+            return redirect(request.args.get("next") or url_for('profile', username=form.username.data))
 
         flash('The entered data is incorrect', category='error')
-    return render_template('login.html', title='Log in', menu=dbase.getMenu())
+    elif request.method == 'POST':
+        flash('The entered data is incorrect', category='error')
+
+    return render_template('login.html', title='Log in', menu=dbase.getMenu(), form=form)
+
+    # if request.method == "POST":
+    #     user = dbase.getUser(email=request.form['email'])
+    #
+    #     if user and request.form["username"] == user['username'] and check_password_hash(user['password'], request.form['password']):
+    #         userlogin = UserLogin().create(user)
+    #         rm = True if request.form.get('remainme') else False
+    #         login_user(userlogin, remember=rm)
+    #         flash(f'Successfuly Logged in as {request.form["username"]} !!', category='success')
+    #         #return redirect(url_for('profile', username=request.form["username"]))
+    #         return redirect(request.args.get("next") or url_for('profile', username=request.form["username"]))
+    #
+    #     flash('The entered data is incorrect', category='error')
+    # return render_template('login.html', title='Log in', menu=dbase.getMenu())
 
 
 @app.route('/logout')
