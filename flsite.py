@@ -12,6 +12,7 @@ from UserLogin import UserLogin
 DATABASE = '/tmp/flsite.db'
 DEBUG = True
 SECRET_KEY = 'juicy-pussy-money-money-pussy-juicy'
+MAX_CONTENT_LENGTH = 1024 * 1024
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -113,10 +114,42 @@ def about():
 def profile(username):
     requester_id = current_user.get_id()
     requester = dbase.getUser(user_id=requester_id)
-
-    if username != requester['username']:
+    #if username != requester['username']:
+    if username != current_user.getName():
         abort(403)
-    return render_template('base.html', title=f"User - {username}", menu=dbase.getMenu())
+    return render_template('profile.html', title=f"User - {username}", menu=dbase.getMenu())
+
+
+@app.route("/userphoto")
+@login_required
+def userphoto():
+    img = current_user.getPhoto(app)
+    if not img:
+        return ''
+    h = make_response(img)
+    h.headers['Content-Type'] = 'image/jpg'
+    return h
+
+
+@app.route('/upload', methods=["POST", "GET"])
+@login_required
+def upload():
+    if request.method == 'POST':
+        file = request.files['file']
+        if file and current_user.verifyExt(file.filename):
+            try:
+                img = file.read()
+                res = dbase.updateUserPhoto(img, current_user.get_id())
+                if not res:
+                    flash('Error during uploading your photo', 'error')
+                    return redirect(url_for('profile', username=current_user.getName()))
+                flash('Your new photo added', 'success')
+            except FileNotFoundError as e:
+                flash('Error during reading file', 'error')
+        else:
+            flash('Error during uploading your photo', 'error')
+
+    return redirect(url_for('profile', username=current_user.getName()))
 
 
 @app.route("/contact", methods=["POST", "GET"])
@@ -144,34 +177,6 @@ def register():
                 flash('Error, email already in use!', category='error')
         flash('Error, The entered data is incorrect! Maybe your username, email or password too short. Or passwords aren`t the same!', category='error')
     return render_template('register.html', title='Registration', menu=dbase.getMenu())
-
-
-# @app.route('/login', methods=["POST", "GET"])
-# def login():
-#     if 'userLogged' in session:
-#         return redirect(url_for('profile', username=session['userLogged']))
-#
-#     if request.method == "POST":
-#         user = dbase.getUser(email=request.form['email'])
-#
-#         if not user:
-#             flash('Error, please try again!', category='error')
-#             return render_template('login.html', title='Log in', menu=dbase.getMenu())
-#
-#         if request.form["username"] == user['username'] and user['email'] == request.form['email'] and check_password_hash(user['password'], request.form['password']):
-#             session['userLogged'] = request.form["username"]
-#             flash(f'Successfuly Logged in as {request.form["username"]}!!', category='success')
-#             return redirect(url_for('profile', username=session['userLogged']))
-#         else:
-#             flash('Error, please try again!', category='error')
-#
-#     return render_template('login.html', title='Log in', menu=dbase.getMenu())
-#
-#
-# @app.route('/logout')
-# def logout():
-#     session.pop('userLogged', None)
-#     return redirect(url_for('index'))
 
 
 @app.route('/login', methods=["POST", "GET"])

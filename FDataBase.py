@@ -65,7 +65,7 @@ class FDataBase:
         return []
 
     def addUser(self, username, email, password):
-        sql = '''INSERT INTO users VALUES(NULL, ?, ?, ?, ?)'''
+        sql = '''INSERT INTO users VALUES(NULL, ?, ?, ?, NULL, ?)'''
 
         try:
             self.__cur.execute(f"SELECT COUNT() as 'count' FROM users WHERE email LIKE '{email}'")
@@ -96,3 +96,17 @@ class FDataBase:
         except sqlite3.Error as e:
             print("Error occurred during receiving user from db"+str(e))
         return False
+
+    def updateUserPhoto(self, img, user_id):
+        if not img:
+            return False
+
+        sql = "UPDATE users SET photo = ? WHERE id = ?"
+        try:
+            binary = sqlite3.Binary(img)
+            self.__cur.execute(sql, (binary, user_id))
+            self.__db.commit()
+        except sqlite3.Error as e:
+            print('Error'+str(e))
+            return False
+        return True
