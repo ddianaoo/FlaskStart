@@ -7,6 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from UserLogin import UserLogin
 from forms import LoginForm, RegisterForm, ContactForm, AddPostForm
+from admin.admin import admin
 
 
 # configuration
@@ -20,6 +21,8 @@ app.config.from_object(__name__)
 app.config.update(dict(DATABASE=os.path.join(app.root_path, 'flsite.db')))
 
 app.permanent_session_lifetime = datetime.timedelta(days=10)
+
+app.register_blueprint(admin, url_prefix='/admin')
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'

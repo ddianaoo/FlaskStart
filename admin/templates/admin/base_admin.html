@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link type="text/css" href="{{ url_for('.static', filename='css/style.css') }}" rel="stylesheet">
+    <title>{{ title }}</title>
+</head>
+<body>
+{% if menu %}
+<ul class="mainmenu">
+    {% for p in menu%}
+    <li><a href="{{ url_for(p.url) }}">{{ p.title }}</a></li>
+    {% endfor %}
+</ul>
+<div class="clear"></div>
+{% endif %}
+
+
+<div class="content">
+{% for cat, msg in get_flashed_messages(True) %}
+<div class="flash {{ cat }}">{{ msg }}</div>
+{% endfor %}
+
+{% block content %}
+{% endblock %}
+</div>
+</body>
+</html>

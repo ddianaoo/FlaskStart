@@ -1,0 +1,14 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block content %}
+<div id="login" class="wnd_dlg_back login_wnd">
+    <div class="login">
+        <p class="title">Admin tools</p>
+        <form action="" method="POST">
+            <p><label class="form-label">Login: </label><input type="text" name="username"></p>
+            <p><label class="form-label">Password: </label><input type="password" name="password"></p>
+            <p align="center"><input class="login_button" type="submit" value="Log in"></p>
+        </form>
+    </div>
+</div>
+{% endblock %}
