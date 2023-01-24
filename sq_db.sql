@@ -20,3 +20,10 @@ password text NOT NULL,
 photo BLOB DEFAULT NULL,
 time integer NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS messages (
+id integer PRIMARY KEY AUTOINCREMENT,
+email text NOT NULL,
+message text NOT NULL,
+time integer NOT NULL
+);

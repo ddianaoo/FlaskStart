@@ -6,7 +6,7 @@ from FDataBase import FDataBase
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from UserLogin import UserLogin
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, RegisterForm, ContactForm, AddPostForm
 
 
 # configuration
@@ -85,15 +85,35 @@ def index():
 
 
 @app.route("/add-post", methods=["POST", "GET"])
+@login_required
 def addPost():
-    if request.method == 'POST':
-        res = dbase.addPost(request.form['title'], request.form['text'], request.form['url'])
+    form = AddPostForm()
+    if form.validate_on_submit():
+        res = dbase.addPost(form.title.data, form.text.data, form.url.data)
         if not res:
             flash('Error occurred during creation post', category='error')
         else:
             flash(f'Yout post was added successfuly !!', category='success')
+            return redirect(url_for('index'))
 
-    return render_template('addpost.html', title='Add post', menu=dbase.getMenu())
+    return render_template('addpost.html', title='Add post', menu=dbase.getMenu(), form=form)
+
+
+@app.route("/contact", methods=["POST", "GET"])
+@login_required
+def contact():
+    form = ContactForm()
+    if form.validate_on_submit():
+        res = dbase.addMessage(form.email.data, form.message.data)
+        print(res)
+        if res and form.email.data == current_user.getEmail():
+            print('I passed all validation')
+            flash(f'{form.username.data}, your message was sent!!', category='success')
+            return redirect(url_for('index'))
+        else:
+            flash('Error, confirm that your email is correct and try again', category='error')
+
+    return render_template('contact.html', title='Contacts', menu=dbase.getMenu(), form=form)
 
 
 @app.route("/post/<url>")
@@ -113,9 +133,6 @@ def about():
 @app.route("/profile/<username>")
 @login_required
 def profile(username):
-    requester_id = current_user.get_id()
-    requester = dbase.getUser(user_id=requester_id)
-    #if username != requester['username']:
     if username != current_user.getName():
         abort(403)
     return render_template('profile.html', title=f"User - {username}", menu=dbase.getMenu())
@@ -151,17 +168,6 @@ def upload():
             flash('Error during uploading your photo', 'error')
 
     return redirect(url_for('profile', username=current_user.getName()))
-
-
-@app.route("/contact", methods=["POST", "GET"])
-def contact():
-    if request.method == "POST":
-        if len(request.form["username"]) > 2:
-            flash(f'{request.form["username"]}, Your message was sent!!', category='success')
-        else:
-            flash('Error, please try again. Your username must consist more than 2 letters!', category='error')
-
-    return render_template('contact.html', title=menu[2]['name'], menu=dbase.getMenu())
 
 
 @app.route('/register', methods=["POST", "GET"])

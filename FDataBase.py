@@ -42,6 +42,23 @@ class FDataBase:
             return False
         return True
 
+    def addMessage(self, email, message):
+        sql = '''INSERT INTO messages VALUES(NULL, ?, ?, ?)'''
+        try:
+            self.__cur.execute(f"SELECT COUNT() as 'count' FROM users WHERE email LIKE '{email}'")
+            res = self.__cur.fetchone()
+            if res['count'] < 1:
+                print("This email doesn't exist")
+                return False
+            tm = math.floor(time.time())
+            self.__cur.execute(sql, (email, message, tm))
+            self.__db.commit()
+        except sqlite3.Error as e:
+            print("Error occurred during adding message into db"+str(e))
+            return False
+        return True
+
+
     def getPost(self, url):
         sql = f"SELECT title, text FROM posts WHERE url LIKE '{url}' LIMIT 1"
         try:

@@ -16,9 +16,11 @@
 {% block mainmenu %}
 <ul class="mainmenu">
     {% for item in menu %}
-    {% if ((item.title == 'Log in' or item.title == 'Register') and current_user.is_authenticated) or (item.title == 'Log out'  and current_user.is_authenticated==False) %}
+    {% if ((item.title == 'Log in' or item.title == 'Register') and current_user.is_authenticated) or ((item.title == 'Log out' or item.title == 'Add post') and current_user.is_authenticated==False) %}
     {{ pass }}
-    {% else %}
+    {% elif  item.title == 'Profile' and current_user.is_authenticated %}
+    <li><a href="{{ url_for(item.url, username=current_user.getName()) }}">{{ item.title }}</a></li>
+    {% elif item.title != 'Profile' %}
     <li><a href="{{ url_for(item.url) }}">{{ item.title }}</a></li>
     {% endif %}
     {% endfor %}
