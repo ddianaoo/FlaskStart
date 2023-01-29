@@ -127,3 +127,14 @@ class FDataBase:
             print('Error'+str(e))
             return False
         return True
+
+    def getUsers(self):
+        sql = '''SELECT id, username, email FROM users ORDER BY time DESC'''
+        try:
+            self.__cur.execute(sql)
+            res = self.__cur.fetchall()
+            if res:
+                return res
+        except:
+            print('Error occurred during receiving users from db')
+        return []

@@ -106,12 +106,12 @@ def addPost():
 @login_required
 def contact():
     form = ContactForm()
-    if form.validate_on_submit():
+    if form.validate_on_submit() and form.email.data == current_user.getEmail():
         res = dbase.addMessage(form.email.data, form.message.data)
         print(res)
-        if res and form.email.data == current_user.getEmail():
+        if res:
             print('I passed all validation')
-            flash(f'{form.username.data}, your message was sent!!', category='success')
+            flash(f'{current_user.getName()}, your message was sent!!', category='success')
             return redirect(url_for('index'))
         else:
             flash('Error, confirm that your email is correct and try again', category='error')

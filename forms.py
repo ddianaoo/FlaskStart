@@ -20,7 +20,6 @@ class RegisterForm(FlaskForm):
 
 
 class ContactForm(FlaskForm):
-    username = StringField('Your Username: ', validators=[Length(min=4, max=20)])
     email = EmailField('Your email: ', validators=[Email()])
     message = TextAreaField('Your message: ')
     submit = SubmitField('Send')
