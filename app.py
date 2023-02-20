@@ -15,6 +15,7 @@ class Users(db.Model):
     email = db.Column(db.String(50), unique=True)
     password = db.Column(db.String(50), nullable=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
+    pr = db.relationship('Profiles', backref='users', uselist=False)
 
     def __repr__(self):
         return f"<users {self.email}>"
@@ -45,18 +46,23 @@ def register():
                          city=request.form['city'], user_id=u.id)
             db.session.add(p)
             db.session.commit()
+            return redirect(url_for('index'))
         except:
             db.session.rollback()
             print("Ошибка добавления в БД")
 
-        return redirect(url_for('index'))
 
     return render_template('register.html', title='Registration')
 
 
 @app.route('/')
 def index():
-    return render_template('index.html', title='Main Page')
+    users = []
+    try:
+        users = Users.query.all()
+    except:
+        print("Ошибка чтения из БД")
+    return render_template('index.html', title='Main Page', users=users)
 
 
 

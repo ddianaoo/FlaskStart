@@ -2,4 +2,12 @@
 
 {% block content %}
 {{ super() }}
+<h3>Hello everybody!!</h3>
+{% for user in users %}
+<h5>{{user.pr.name}}</h5>
+<p>{{user.pr.old}}</p>
+<p>{{user.pr.city}}</p>
+<p>{{user.email}}</p>
+<br>
+{% endfor %}
 {% endblock %}
